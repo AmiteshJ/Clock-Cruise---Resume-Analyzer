@@ -8,7 +8,7 @@ Built as a technical assessment for an internship application.
 
 ## Live Demo
 
-[Click here to view the app](#) ← replace with your Netlify link
+[https://timely-lolly-1c2d51.netlify.app/](url)
 
 ---
 
