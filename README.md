@@ -8,7 +8,7 @@ Built as a technical assessment for an internship application.
 
 ## Live Demo
 
-[https://timely-lolly-1c2d51.netlify.app/](url)
+[Resume Analyzer](https://timely-lolly-1c2d51.netlify.app/)
 
 ---
 
