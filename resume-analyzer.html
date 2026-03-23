@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Resume Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0f0f13;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            padding: 40px 20px 60px;
+        }
+
+        .wrapper {
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #f0f0ff;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #5a5a7a;
+            margin-bottom: 28px;
+        }
+
+        .card {
+            background: #13131f;
+            border: 1px solid #1e1e30;
+            border-radius: 10px;
+            padding: 24px;
+            margin-bottom: 18px;
+        }
+
+        .card-ai {
+            border-left: 3px solid #6366f1;
+        }
+
+        .label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #5a5a7a;
+            margin-bottom: 12px;
+        }
+
+        textarea {
+            width: 100%;
+            background: #0c0c16;
+            border: 1px solid #1e1e30;
+            border-radius: 8px;
+            color: #c8c8e0;
+            font-size: 13px;
+            font-family: 'Segoe UI', sans-serif;
+            line-height: 1.7;
+            padding: 14px;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+            min-height: 180px;
+        }
+
+        textarea:focus {
+            border-color: #6366f1;
+        }
+
+        .wordcount {
+            font-size: 11px;
+            color: #3a3a5a;
+            margin-top: 6px;
+            text-align: right;
+        }
+
+        .error {
+            color: #ef4444;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        button {
+            border: none;
+            border-radius: 8px;
+            padding: 11px 28px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, opacity 0.2s;
+        }
+
+        .btn-primary {
+            background: #6366f1;
+            color: #fff;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #4f52d9;
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #5a5a7a;
+            border: 1px solid #2a2a40;
+        }
+
+        .btn-secondary:hover {
+            color: #a0a0c0;
+            border-color: #4a4a6a;
+        }
+
+        /* results */
+        .results {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        @media (max-width: 540px) {
+            .row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card-center {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .role-text {
+            font-size: 22px;
+            font-weight: 700;
+            color: #a5b4fc;
+            margin-bottom: 10px;
+            line-height: 1.3;
+        }
+
+        .role-note {
+            font-size: 12px;
+            color: #3a3a5a;
+        }
+
+        /* skills */
+        .skill-category {
+            margin-bottom: 16px;
+        }
+
+        .cat-label {
+            font-size: 12px;
+            color: #7c7caa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag {
+            background: #1a1a2e;
+            border: 1px solid #2e2e50;
+            border-radius: 6px;
+            padding: 4px 12px;
+            font-size: 13px;
+            color: #a5b4fc;
+        }
+
+        .ai-loading {
+            color: #3a3a5a;
+            font-size: 13px;
+            font-style: italic;
+        }
+
+        .ai-text {
+            white-space: pre-wrap;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 13px;
+            color: #c0c0da;
+            line-height: 1.8;
+        }
+
+        #results {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+
+        <h1>Resume Analyzer</h1>
+        <p class="subtitle">Paste your resume → get skills, role suggestion &amp; score</p>
+
+        <!-- Input -->
+        <div class="card">
+            <div class="label">Your Resume Text</div>
+            <textarea id="resumeInput"
+                placeholder="Paste your resume content here...&#10;&#10;Include skills, experience, education, projects for best results."
+                oninput="updateWordCount()"></textarea>
+            <div class="wordcount" id="wordcount"></div>
+            <div class="error" id="errorMsg"></div>
+            <div class="btn-row">
+                <button class="btn-primary" id="analyzeBtn" onclick="handleAnalyze()">Analyze Resume</button>
+                <button class="btn-secondary" id="resetBtn" onclick="handleReset()" style="display:none">Reset</button>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="results" class="results">
+
+            <div class="row">
+                <!-- Score -->
+                <div class="card card-center">
+                    <div class="label">Resume Score</div>
+                    <svg id="scoreRing" width="110" height="110" viewBox="0 0 110 110">
+                        <circle cx="55" cy="55" r="45" fill="none" stroke="#1e1e2e" stroke-width="10" />
+                        <circle id="ringFill" cx="55" cy="55" r="45" fill="none" stroke="#6366f1" stroke-width="10"
+                            stroke-dasharray="282.74" stroke-dashoffset="282.74" stroke-linecap="round"
+                            transform="rotate(-90 55 55)"
+                            style="transition: stroke-dashoffset 0.8s ease, stroke 0.4s ease" />
+                        <text id="scoreNum" x="55" y="50" text-anchor="middle" fill="#fff" font-size="20"
+                            font-weight="bold" font-family="Segoe UI">0</text>
+                        <text x="55" y="66" text-anchor="middle" fill="#888" font-size="9" font-family="Segoe UI">/
+                            100</text>
+                    </svg>
+                    <div id="scoreLabel" style="font-size:13px; font-weight:600; margin-top:4px;"></div>
+                </div>
+
+                <!-- Role -->
+                <div class="card">
+                    <div class="label">Suggested Role</div>
+                    <div class="role-text" id="roleText"></div>
+                    <div class="role-note">Based on skills detected in your resume</div>
+                </div>
+            </div>
+
+            <!-- Skills -->
+            <div class="card">
+                <div class="label">Extracted Skills</div>
+                <div id="skillsContainer"></div>
+            </div>
+
+            <!-- AI Feedback -->
+            <div class="card card-ai">
+                <div class="label">✦ AI Feedback</div>
+                <div id="aiFeedback" class="ai-loading">Getting AI feedback...</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ─── SKILL KEYWORDS ───────────────────────────────────────────────────────────
+        // Each category maps to a list of keywords we look for in the resume text.
+        const SKILL_KEYWORDS = {
+            frontend: ['react', 'vue', 'angular', 'html', 'css', 'javascript', 'typescript', 'tailwind', 'bootstrap', 'redux', 'nextjs', 'next.js', 'jquery', 'sass'],
+            backend: ['node', 'nodejs', 'express', 'python', 'django', 'flask', 'fastapi', 'java', 'spring', 'php', 'laravel', 'ruby', 'rails', 'golang', 'rust', 'c#', '.net', 'graphql'],
+            database: ['sql', 'mysql', 'postgresql', 'mongodb', 'redis', 'firebase', 'sqlite', 'oracle', 'dynamodb'],
+            devops: ['docker', 'kubernetes', 'aws', 'azure', 'gcp', 'ci/cd', 'jenkins', 'terraform', 'linux', 'bash', 'git', 'github', 'gitlab'],
+            datascience: ['pandas', 'numpy', 'tensorflow', 'pytorch', 'scikit-learn', 'keras', 'machine learning', 'deep learning', 'data analysis', 'tableau', 'power bi', 'matplotlib', 'jupyter', 'spark'],
+            mobile: ['react native', 'flutter', 'swift', 'kotlin', 'android', 'ios'],
+        };
+
+        const CAT_ICONS = {
+            frontend: '🖥️', backend: '⚙️', database: '🗄️',
+            devops: '☁️', datascience: '📊', mobile: '📱',
+        };
+
+        // ─── EXTRACT SKILLS ───────────────────────────────────────────────────────────
+        function extractSkills(text) {
+            const lower = text.toLowerCase();
+            const found = {};
+            for (const [cat, keywords] of Object.entries(SKILL_KEYWORDS)) {
+                const matched = keywords.filter(kw => lower.includes(kw));
+                if (matched.length > 0) found[cat] = matched;
+            }
+            return found;
+        }
+
+        // ─── SUGGEST ROLE ─────────────────────────────────────────────────────────────
+        function suggestRole(skills) {
+            const cats = Object.keys(skills);
+            if (cats.includes('datascience') && skills['datascience'].length >= 2) return 'Data Scientist / ML Engineer';
+            if (cats.includes('devops') && skills['devops'].length >= 3) return 'DevOps / Cloud Engineer';
+            if (cats.includes('mobile') && skills['mobile'].length >= 1) return 'Mobile App Developer';
+            if (cats.includes('frontend') && cats.includes('backend')) return 'Full Stack Developer';
+            if (cats.includes('frontend')) return 'Frontend Developer';
+            if (cats.includes('backend')) return 'Backend Developer';
+            if (cats.includes('database')) return 'Database Administrator';
+            return 'Software Engineer';
+        }
+
+        // ─── SCORE RESUME ─────────────────────────────────────────────────────────────
+        function scoreResume(text, skills) {
+            let score = 0;
+            const lower = text.toLowerCase();
+            const wordCount = text.trim().split(/\s+/).length;
+
+            // skill count — more skills = more points (capped at 25)
+            const totalSkills = Object.values(skills).flat().length;
+            score += Math.min(totalSkills * 3, 25);
+
+            // length check
+            if (wordCount > 100) score += 8;
+            if (wordCount > 250) score += 7;
+            if (wordCount > 450) score += 5;
+
+            // standard resume sections
+            ['experience', 'education', 'projects', 'skills', 'summary', 'objective', 'achievements']
+                .forEach(s => { if (lower.includes(s)) score += 4; });
+
+            // contact info
+            if (/[\w.-]+@[\w.-]+\.\w+/.test(text)) score += 5;
+            if (/(\+\d{1,3}[\s-])?\d{10}/.test(text)) score += 3;
+            if (lower.includes('github.com')) score += 3;
+            if (lower.includes('linkedin.com')) score += 3;
+
+            return Math.min(Math.round(score), 100);
+        }
+
+        // ─── UI HELPERS ───────────────────────────────────────────────────────────────
+        function updateWordCount() {
+            const text = document.getElementById('resumeInput').value;
+            const wc = text.trim() ? text.trim().split(/\s+/).length : 0;
+            document.getElementById('wordcount').textContent = wc > 0 ? wc + ' words' : '';
+        }
+
+        function setScore(score) {
+            const circumference = 282.74;
+            const offset = ((100 - score) / 100) * circumference;
+
+            let color = '#ef4444';
+            let label = 'Weak';
+            if (score >= 40) { color = '#f59e0b'; label = 'Fair'; }
+            if (score >= 60) { color = '#6366f1'; label = 'Good'; }
+            if (score >= 80) { color = '#22c55e'; label = 'Strong'; }
+
+            document.getElementById('ringFill').style.strokeDashoffset = offset;
+            document.getElementById('ringFill').style.stroke = color;
+            document.getElementById('scoreNum').textContent = score;
+            document.getElementById('scoreLabel').textContent = label;
+            document.getElementById('scoreLabel').style.color = color;
+        }
+
+        function renderSkills(skills) {
+            const container = document.getElementById('skillsContainer');
+            const cats = Object.entries(skills);
+
+            if (cats.length === 0) {
+                container.innerHTML = '<p style="color:#555;font-size:14px">No skills detected. Try adding specific skill names.</p>';
+                return;
+            }
+
+            container.innerHTML = cats.map(([cat, list]) => `
+    <div class="skill-category">
+      <div class="cat-label">${CAT_ICONS[cat] || '🔹'} ${cat}</div>
+      <div class="tags">
+        ${list.map(s => `<span class="tag">${s}</span>`).join('')}
+      </div>
+    </div>
+  `).join('');
+        }
+
+        // ─── MAIN ANALYZE FUNCTION ────────────────────────────────────────────────────
+        async function handleAnalyze() {
+            const text = document.getElementById('resumeInput').value;
+
+            if (!text.trim()) {
+                document.getElementById('errorMsg').textContent = 'Please paste your resume text first.';
+                return;
+            }
+
+            document.getElementById('errorMsg').textContent = '';
+            document.getElementById('analyzeBtn').disabled = true;
+            document.getElementById('analyzeBtn').textContent = 'Analyzing...';
+
+            // small delay so button state is visible
+            await new Promise(r => setTimeout(r, 400));
+
+            // run analysis
+            const skills = extractSkills(text);
+            const role = suggestRole(skills);
+            const score = scoreResume(text, skills);
+
+            // show results
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('resetBtn').style.display = 'inline-block';
+            document.getElementById('roleText').textContent = role;
+            setScore(score);
+            renderSkills(skills);
+            document.getElementById('aiFeedback').textContent = 'Getting AI feedback...';
+            document.getElementById('aiFeedback').className = 'ai-loading';
+
+            document.getElementById('analyzeBtn').disabled = false;
+            document.getElementById('analyzeBtn').textContent = 'Analyze Resume';
+
+            // scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+
+            // get AI feedback separately so local results show immediately
+            fetchAIFeedback(text, score, role);
+        }
+
+        // ─── AI FEEDBACK ──────────────────────────────────────────────────────────────
+        async function fetchAIFeedback(text, score, role) {
+            try {
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'claude-sonnet-4-20250514',
+                        max_tokens: 1000,
+                        messages: [{
+                            role: 'user',
+                            content: `You are a resume reviewer. Analyze this resume and give:
+- 3 short strengths (1 line each)
+- 2 specific improvements (1 line each)
+
+Keep it practical and concise. Score: ${score}/100, Suggested role: ${role}.
+
+Resume:
+${text.slice(0, 1500)}`
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                const feedbackText = data.content?.find(b => b.type === 'text')?.text;
+
+                const el = document.getElementById('aiFeedback');
+                if (feedbackText) {
+                    el.textContent = feedbackText;
+                    el.className = 'ai-text';
+                } else {
+                    el.textContent = 'Could not parse AI response.';
+                    el.className = 'ai-text';
+                }
+            } catch (err) {
+                // if API fails, show fallback — local analysis still works fine
+                const el = document.getElementById('aiFeedback');
+                el.textContent = 'AI feedback unavailable right now. Local analysis above is still accurate.';
+                el.className = 'ai-text';
+            }
+        }
+
+        // ─── RESET ────────────────────────────────────────────────────────────────────
+        function handleReset() {
+            document.getElementById('resumeInput').value = '';
+            document.getElementById('wordcount').textContent = '';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('resetBtn').style.display = 'none';
+            document.getElementById('errorMsg').textContent = '';
+        }
+    </script>
+</body>
+
+</html>
